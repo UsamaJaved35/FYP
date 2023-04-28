@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import {io} from 'socket.io-client';
 import { useEffect } from 'react';
 import { MDBProgress, MDBProgressBar } from 'mdb-react-ui-kit';
-const socket = io('http://localhost:4003');
+let port=process.env.PORT || 4001
+const socket = io(`http://localhost:${port}`);
 const FileUpload = () => {
-    const [Image,setImage]=useState('');
+    const [File,setFile]=useState('');
+    const [fileType,setfileType]=useState(true);
     const [loading,IsLoading]=useState(false)
     const [text,setText]=useState('')   
     const [success,setSuccess]=useState(true)
@@ -28,13 +30,21 @@ const FileUpload = () => {
       // };
     }, []);
 
-
      const  handleSubmit= async()=>{
-      const formData = new FormData();  
-      formData.append('file', Image);
+      setfileType(true)
+      const formData = new FormData();
+      const extension = File.name.split('.').pop().toLowerCase();
+     // console.log(File.name.split('.')[1].toLowerCase())
+      if(extension!=='pdf' && extension!=='jpg'&& extension!=='jpeg' &&
+        extension!=='png'){
+        setfileType(false)
+       }
+      else{
+      formData.append('file', File);
       setProgress(0)
       IsLoading(true)
-      const response=await fetch('http://localhost:4003/api/upload',
+      let address=File.name.split('.')[1].toLowerCase()==='pdf'?`http://localhost:${port}/api/upload/pdf`:`http://localhost:${port}/api/upload`
+      const response=await fetch(address,
       {
         method:'POST',
         body:formData
@@ -44,17 +54,15 @@ const FileUpload = () => {
         console.log(data)
         console.log(data.message)
         if(data.message){
-          console.log(true)
+         // console.log(data.Id)
         setSuccess(true)
-        setText(data.message)
+        setText(data.hash)
         IsLoading(false)
         }
         else{
           setSuccess(false)
         }
-      //}).catch(error=>{
-        //console.log('catch')
-      //});
+      }
     }
     return (
     <div>
@@ -67,17 +75,22 @@ const FileUpload = () => {
           There's some issue with the server. Please try again later.
         </div>
         }
+          {!fileType &&
+        <div className="alert alert-danger" role="alert">
+          Unsupported format of file! Use:jpeg/jpg/png/pdf format
+        </div>
+        }
         {!loading && !text &&
             <>
-             <h4 className='text-center'>Just Drop your E-Stamp Image here!</h4>
+             <h4 className='text-center'>Just Drop your E-Stamp File here!</h4>
                 <input
                 type="file"
                 onChange={(e) =>
-                  setImage(e.target.files[0])
+                  setFile(e.target.files[0])
                 }
                 className="form-control mb-2 mt-4"
               />
-              {Image &&
+              {File &&
              <input
                 type="button"
                 onClick={handleSubmit}
@@ -94,10 +107,6 @@ const FileUpload = () => {
                {progress}%
                 </MDBProgressBar>
             </MDBProgress>
-              {/* <progress className="form-control" value={progress} max="100">
-                {progress}%{' '}
-              </progress>{' '}
-              <p className="text-center py-0 my-0">Converting:- {progress} %</p> */}
             </>
           }
             { text && !loading &&
