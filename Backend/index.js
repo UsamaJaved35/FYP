@@ -65,9 +65,13 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
       console.log(text);
       io.emit('text', text);
       let hashText = hashGenerator(text);
+      const match = text.match(/E-Stamp ID : (\S+)/);
+      const estampId = match ? match[1] : null;
+      console.log(estampId);
       return res.json({
         message: text,
-        hash: hashText
+        hash: hashText,
+        Id: estampId
       })
     })
   } catch (error) {
@@ -102,22 +106,10 @@ app.post('/api/upload/pdf', upload.single('file'), async (req, res) => {
     //console.log(text)
     let hashText = hashGenerator(text);
 
-    const match = text.match(/E-Stamp ID :\s*\S+/);
-    const estampId = match ? match[0] : null;
+    const match = text.match(/E-Stamp ID : (\S+)/);
+    const estampId = match ? match[1] : null;
     console.log(estampId);
-    //const inputString = "some text here E Stamp Id: some id with spaces and special characters";
-    // const idPattern = `/E-Stamp ID : (.*)/`;  // the regular expression pattern
-
-    // const match = text.match(idPattern);  // match the pattern against the input string
-    // console.log(`aajjaa ${match}`);
-    // if (match) {
-    //   const id = match[1];  // extract the ID from the first captured group
-    //   console.log(id);  // output the extracted ID
-    // } else {
-    //   console.log("No ID found");  // handle the case when the pattern is not matched
-    // }
-
-
+  
     return res.status(200).json({
       message: text,
       hash: hashText,
