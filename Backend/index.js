@@ -1,14 +1,16 @@
+//OCR CONFIGURATION
 const express = require('express');
 const pdfjsLib = require('pdfjs-dist');
 const app = express();
 const cors = require('cors');
 const multer = require('multer');
 const Tesseract = require('tesseract.js');
-const { request } = require('http');
 const server = require('http').createServer(app);
 const io = require('socket.io')(server, { cors: { origin: '*' } });
-const hashGenerator = require('./hash')
-
+const hashGenerator = require('./hashGenerator')
+const saveHash = require('./saveHash')
+const getHash = require('./getHash');
+const compareHash = require('./compareHash');
 //MULTER CONFIGURATION FOR FILE UPLOAD
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -24,7 +26,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: 'http://localhost:3001',
   credentials: true
 }))
 const port = process.env.PORT || 4001;
@@ -45,7 +47,7 @@ app.post('/', (req, res) => {
   res.send('hello')
 })
 //END POINT FOR TEXT EXRACTION FROM IMAGE
-app.post('/api/upload', upload.single('file'), (req, res) => {
+app.post('/api/upload', upload.single('file'),async (req, res) => {
   const emitProgress = (progress) => {
     io.emit('progress', progress);
   };
@@ -61,17 +63,28 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
           }
         }
       }
-    ).then(({ data: { text } }) => {
-      console.log(text);
+    ).then(async ({ data: { text } }) => {
+     // console.log(text);
       io.emit('text', text);
+      console.log(text);
       let hashText = hashGenerator(text);
-      const match = text.match(/E-Stamp ID : (\S+)/);
-      const estampId = match ? match[1] : null;
+      const match = text.match(/E-Stamp ID: (\S+)/);
+      let estampId = match ? match[1] : text.match(/E-Stamp ID : (\S+)/)[1];
+      console.log(match);
       console.log(estampId);
+     // let status = saveHash(estampId, hashText);
+    //  let st= await getHash(estampId);
+    let status = await compareHash(estampId, hashText);
+      if (status) {
+        return res.json({
+          success: true,
+          status: status,
+          Id: estampId,
+        })
+      }
       return res.json({
-        message: text,
-        hash: hashText,
-        Id: estampId
+        success:true,
+        status:status,
       })
     })
   } catch (error) {
@@ -106,31 +119,26 @@ app.post('/api/upload/pdf', upload.single('file'), async (req, res) => {
     //console.log(text)
     let hashText = hashGenerator(text);
 
-    const match = text.match(/E-Stamp ID : (\S+)/);
-    const estampId = match ? match[1] : null;
-    console.log(estampId);
-  
-    return res.status(200).json({
-      message: text,
-      hash: hashText,
-      Id: estampId,
-    });
-    // Use Tesseract.js to perform OCR on the entire PDF file
-    // Tesseract.recognize(pdfPath, 'eng').then(({ data: { text: ocrText } }) => {
-    //   console.log(ocrText);
-    //   // Emit the OCR text to the client using Socket.IO
-    //   io.emit('text', ocrText);
-    //   // Return the extracted text content in the response
-    //   return res.json({
-    //     message: text
-    //   });
-    // }).catch(error => {
-    //   console.error(error);
-    //   // Return an error response if OCR fails
-    //   return res.status(500).json({
-    //     message: 'Error extracting text from PDF'
-    //   });
-    // });
+    const match = text.match(/E-Stamp ID: (\S+)/);
+    let estampId = match ? match[1] : text.match(/E-Stamp ID : (\S+)/)[1];
+    estampId.length>23?estampId=estampId.slice(0,-5):estampId=estampId;
+    console.log('before'+ estampId);
+    estampId = estampId.replace(/0/g, 'O');
+    console.log('after'+estampId);
+    let status = await getHash(estampId);
+    console.log(status);
+    console.log('hashoo'+hashText);
+    if (status) {
+      return res.json({
+        success: true,
+        status: status,
+        Id: estampId,
+      })
+    }
+    return res.json({
+      success:true,
+      status:status,
+    })
   } catch (error) {
     console.error(error);
     // Return an error response if an error occurs while extracting text from the PDF

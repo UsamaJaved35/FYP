@@ -11,6 +11,7 @@ const FileUpload = () => {
   const [text, setText] = useState('')
   const [success, setSuccess] = useState(true)
   const [progress, setProgress] = useState(0)
+  const [status, setStatus] = useState('')
   useEffect(() => {
     socket.on('connect', () => {
       console.log('Connected to server');
@@ -46,10 +47,11 @@ const FileUpload = () => {
           body: formData
         });
       //then(response=>{
-      let data = await response.json()
-      console.log(data)
-      console.log(data.message)
-      if (data.Id) {
+      let data = await response.json();
+      setStatus(data.status);
+      console.log(data.status)
+      console.log(data.Id)
+      if (data.success) {
         // console.log(data.Id)
         setSuccess(true)
         setText(data.Id)
@@ -110,13 +112,14 @@ const FileUpload = () => {
                     }
                     {text && !loading &&
                       <>
-                        <h4 className='text-center'>Below is the extracted text!</h4>
+                        <h4 className='text-center'>Below are the details!</h4>
                         <textarea
                           className="form-control w-100 mt-5"
-                          rows="24"
-                          value={text}
+                          rows="4"
+                          value={`E-STAMP ID: ${text}\nSTATUS: ${status ? 'VERIFIED' : 'NOT VERIFIED'}`}
                           onChange={(e) => setText(e.target.value)}
-                        ></textarea>
+                        >
+                        </textarea>
                       </>
                     }
               </div>
