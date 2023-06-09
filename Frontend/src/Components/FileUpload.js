@@ -9,6 +9,7 @@ const FileUpload = () => {
   const [fileType, setfileType] = useState(true);
   const [loading, IsLoading] = useState(false)
   const [text, setText] = useState('')
+  const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(true)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState('')
@@ -31,6 +32,7 @@ const FileUpload = () => {
     setfileType(true)
     const formData = new FormData();
     const extension = File.name.split('.').pop().toLowerCase();
+    console.log(extension)
     // console.log(File.name.split('.')[1].toLowerCase())
     if (extension !== 'pdf' && extension !== 'jpg' && extension !== 'jpeg' &&
       extension !== 'png') {
@@ -60,6 +62,7 @@ const FileUpload = () => {
       else {
         setSuccess(false)
         setFile('')
+        setMessage(data.message)
       }
     }
   }
@@ -74,10 +77,16 @@ const FileUpload = () => {
                 <h3>Acceptable in <b>PDF PNG JPG JPEG </b></h3>
                 <div>
                   <div className="upload-container" style={{ marginTop: 10 }}>
-                    {!success && !File &&
+                    {!success && !File && !message &&
                       <div className="alert alert-danger" role="alert">
                         There's some issue with the server. Please try again later.
                         You may try a clear picture of the stamp.
+                      </div>
+                    }
+                    { !success && !File && message &&
+                      <div className="alert alert-danger" role="alert">
+                        {message} <br />
+                        You may try using a clear picture of the stamp.
                       </div>
                     }
                     {!fileType &&
@@ -113,11 +122,28 @@ const FileUpload = () => {
                     {text && !loading &&
                       <>
                         <h4 className='text-center'>Below are the details!</h4>
+                        { status && 
+                           <div className="alert alert-success" role="alert">
+                            <div className="icon hidden-xs">
+                                <i className="fa fa-check"></i>
+                                    <span className='ml-md-4 p-2'>SUCCESS! E-STAMP IS VERIFIED.</span>
+                              </div>
+                         </div>
+                        }
+                        { !status && 
+                           <div className="alert alert-danger" role="alert">
+                            <div className="icon hidden-xs">
+                                <i className="fa fa-ban"></i>
+                                    <span className='ml-md-4 p-2'>DANGER! E-STAMP IS TAMPERED.</span>
+                              </div>
+                         </div>
+                        }
                         <textarea
-                          className="form-control w-100 mt-5"
+                          className="form-control w-100 mt-md-3"
                           rows="4"
                           value={`E-STAMP ID: ${text}\nSTATUS: ${status ? 'VERIFIED' : 'NOT VERIFIED'}`}
                           onChange={(e) => setText(e.target.value)}
+                          readOnly={true}
                         >
                         </textarea>
                       </>
