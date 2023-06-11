@@ -1,6 +1,5 @@
 //OCR CONFIGURATION
 const express = require('express');
-const pdfjsLib = require('pdfjs-dist');
 const app = express();
 const cors = require('cors');
 const multer = require('multer');
@@ -55,14 +54,13 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   };
 
   try {
-    // console.log(req.file);
     const originalWidth = 800;
-    const originalHeight = 610;
+    const originalHeight = 750;
     const zoomFactor = 3;
     const sharpenSigma = 100;
-    const cropHeight = originalHeight;
+    const cropHeight = originalHeight/2;
     const imagePath = 'uploads/' + req.file.filename; // Path to the uploaded file
-    console.log(imagePath);
+    emitProgress(15);
     const outputFilePath = 'outputs/' + req.file.filename.replace(/\.[^/.]+$/, '') + new Date().getTime() + '-zoomed.jpg';
     sharp(imagePath)
       .resize(Math.round(originalWidth * zoomFactor), Math.round(originalHeight * zoomFactor))
@@ -75,32 +73,37 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
           res.status(500).send('Error zooming image');
         } else {
           console.log('Image zoomed successfully');
+          emitProgress(30);
           Tesseract.recognize(
             outputFilePath,
             'eng',
             {
               logger: (m) => {
                 if (m.progress) {
-                  emitProgress(m.progress);
+                  emitProgress(30 + m.progress * 50);
                 }
               }
             }
           ).then(async ({ data: { text } }) => {
-            console.log('before: \n' + text);
             io.emit('text', text);
             //let match=text.match(/E-Stamp ([\S\s]{23})/)
             let match = text.match(/E-Stamp ID: ([\S\s]{23})/);
-            match=match? match :text.match(/E-Stamp 1D: ([\S\s]{23})/)
+            match = match ? match : text.match(/E-Stamp 1D: ([\S\s]{23})/)
+            emitProgress(80);
+            text = text.replace('E-Stamp 1D:', 'E-Stamp ID:');
             if (match) {
               let estampId = match ? match[1] : text.match(/E-Stamp ID: ([\S\s]{23})/)[1];
               estampId = estampId.replace(/\s/g, '');
               text = text.replace(/\s/g, '');
-              console.log('after: \n' + text);
+              text=text.replace('PaidThroughChallan1','PaidThroughChallan')
+              emitProgress(85);
               let hashText = hashGenerator(text);
+              emitProgress(90);
               console.log(estampId);
               //  let status = saveHash(estampId, hashText);
-              //  let st= await getHash(estampId);
               let status = await compareHash(estampId, hashText);
+              emitProgress(100);
+              console.log(hashText);
               //let status=true;
               if (status) {
                 return res.json({
@@ -144,20 +147,21 @@ app.post('/api/upload/pdf', upload.single('file'), async (req, res) => {
       out_prefix: 'image' + '_' + new Date().getTime(),
       page: 1, // Specify the page number you want to convert (e.g., 1 for the first page)
     };
-//Sharp configuration
-const originalWidth = 500;
-const originalHeight = 600;
-const zoomFactor = 3;
-const sharpenSigma = 100;
-const cropHeight = originalHeight / 2;
+    //Sharp configuration
+    const originalWidth = 500;
+    const originalHeight = 600;
+    const zoomFactor = 3;
+    const sharpenSigma = 100;
+    const cropHeight = originalHeight / 2;
     // Crop the image vertically in the middle
+    emitProgress(15);
     pdfPoppler.convert(pdfPath, options)
       .then((result) => {
         console.log('Image converted successfully');
+        emitProgress(30);
 
         const outPrefix = options.out_prefix;
         const imageName = outPrefix + '-' + options.page + '.jpg';
-        console.log(imageName);
         const imagePath = 'uploads/' + imageName;
         let outputFilePath = 'outputs/' + options.out_prefix + '-' + options.page + '-zoomed.jpg';
         sharp(imagePath)
@@ -166,40 +170,38 @@ const cropHeight = originalHeight / 2;
           .sharpen(sharpenSigma)
           .extract({ width: Math.round(originalWidth * zoomFactor), height: Math.round(cropHeight * zoomFactor), left: 0, top: 0 })
           .toFile(outputFilePath, (err, info) => {
+            emitProgress(50);
             if (err) {
               console.error('Image zooming error:', err);
               res.status(500).send('Error zooming image');
             } else {
               console.log('Image zoomed successfully');
-              // res.send({ zoomedImagePath: info.path });
               try {
-                console.log(info.path);
                 Tesseract.recognize(
                   outputFilePath,
                   'eng',
                   {
                     logger: (m) => {
                       if (m.progress) {
-                        emitProgress(m.progress);
+                        emitProgress(50 + m.progress * 50);
                       }
                     }
                   }
                 ).then(async ({ data: { text } }) => {
-                  console.log(text);
                   io.emit('text', text);
-                  console.log('before: \n' + text);
                   const match = text.match(/E-Stamp ID: ([\S\s]{23})/);
                   if (match) {
                     let estampId = match ? match[1] : text.match(/E-Stamp ID: ([\S\s]{23})/)[1];
                     console.log(estampId);
                     estampId = estampId.replace(/\s/g, '');
                     text = text.replace(/\s/g, '');
-                    console.log('after: \n' + text);
+                    text=text.replace('PaidThroughChallan1','PaidThroughChallan')
                     let hashText = hashGenerator(text);
-                    //let status = saveHash(estampId, hashText);
-                    //  let st= await getHash(estampId);
+                   // let status = saveHash(estampId, hashText);
                     let status = await compareHash(estampId, hashText);
-                    if (status) {
+                  // let status=true;
+                   console.log(hashText); 
+                   if (status) {
                       return res.json({
                         success: true,
                         status: status,

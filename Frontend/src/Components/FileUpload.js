@@ -19,7 +19,7 @@ const FileUpload = () => {
     });
     socket.on('progress', (progress) => {
       // IsLoading(true)
-      setProgress(parseInt(progress * 100));
+      setProgress(parseInt(progress));
     });
     socket.on('text', (data) => {
       setText(data.text);
@@ -42,6 +42,12 @@ const FileUpload = () => {
       formData.append('file', File);
       setProgress(0)
       IsLoading(true)
+      // if (File.name.split('.')[1].toLowerCase() === 'pdf') {
+      //   const numPages = await getNumPages(File);
+      //   console.log(numPages)
+      //   setNumPages(numPages);
+      // }
+      // if (numPages === 1) {
       let address = File.name.split('.')[1].toLowerCase() === 'pdf' ? `http://localhost:${port}/api/upload/pdf` : `http://localhost:${port}/api/upload`
       const response = await fetch(address,
         {
@@ -64,97 +70,107 @@ const FileUpload = () => {
         setFile('')
         setMessage(data.message)
       }
+      // }
+      // else {
+      //   setMessage('Multiple pages in PDF are not allowed!')
+      // }
     }
   }
   return (
     <div>
-        <section id="hero" style={{ marginTop: 72 }} className="d-flex align-items-center">
-          <div className="container">
-            <div className="row gy-4">
-              <div className="col-lg-6 order-2 order-lg-1 d-flex flex-column justify-content-center">
-                <h1>E-Stamp Verification System</h1>
-                <h3>Drop your E-stamps here!</h3>
-                <h3>Acceptable in <b>PDF PNG JPG JPEG </b></h3>
-                <div>
-                  <div className="upload-container" style={{ marginTop: 10 }}>
-                    {!success && !File && !message &&
-                      <div className="alert alert-danger" role="alert">
-                        There's some issue with the server. Please try again later.
-                        You may try a clear picture of the stamp.
-                      </div>
-                    }
-                    { !success && !File && message &&
-                      <div className="alert alert-danger" role="alert">
-                        {message} <br />
-                        You may try using a clear picture of the stamp.
-                      </div>
-                    }
-                    {!fileType &&
-                      <div className="alert alert-danger" role="alert">
-                        Unsupported format of file! Use:jpeg/jpg/png/pdf format
-                      </div>
-                    }
-                    {!loading && !text &&
+      <section id="hero" style={{ marginTop: 72 }} className="d-flex align-items-center">
+        <div className="container">
+          <div className="row gy-4">
+            <div className="col-lg-6 order-2 order-lg-1 d-flex flex-column justify-content-center">
+              <h1>E-Stamp Verification System</h1>
+              <h3>Drop your E-stamps here!</h3>
+              <h3>Acceptable in <b>PDF PNG JPG JPEG </b></h3>
+              <div>
+                <div className="upload-container" style={{ marginTop: 10 }}>
+                  {!success && !File && !message &&
+                    <div className="alert alert-danger" role="alert">
+                      There's some issue with the server. Please try again later.
+                      You may try a clear picture of the stamp.
+                    </div>
+                  }
+                  {!success && !File && message &&
+                    <div className="alert alert-danger" role="alert">
+                      {message} <br />
+                      You may try using a clear picture of the stamp.
+                    </div>
+                  }
+                  {/* {numPages>1 && message &&
+                    <div className="alert alert-danger" role="alert">
+                      {message} <br />
+                    </div>
+                  } */}
+
+                  {!fileType &&
+                    <div className="alert alert-danger" role="alert">
+                      Unsupported format of file! Use:jpeg/jpg/png/pdf format
+                    </div>
+                  }
+                  {!loading && !text &&
                     <input className="upload-btn scrollto"
                       type="file"
                       onChange={(e) =>
                         setFile(e.target.files[0])
                       }
                       id='file-input' />}
-                    {File && !loading && !text &&
-                      <input
-                        type="button"
-                        onClick={handleSubmit}
-                        className="upload-btn mt-5 ms-2"
-                        value="CHECK"
-                      />}
-                  </div>
+                  {File && !loading && !text &&
+                    <input
+                      type="button"
+                      onClick={handleSubmit}
+                      className="upload-btn mt-5 ms-2"
+                      value="CHECK"
+                    />}
                 </div>
-                {loading && !text &&
-                      <>
-                        <MDBProgress height='20'>
-                          <MDBProgressBar width={progress} value={progress} valuemin={0} valuemax={100}>
-                           <span style={{backgroundColor:'green'}} > {progress}% <b>Completed</b> </span>
-                          </MDBProgressBar>
-                        </MDBProgress>
-                      </>
-                    }
-                    {text && !loading &&
-                      <>
-                        <h4 className='text-center'>Below are the details!</h4>
-                        { status && 
-                           <div className="alert alert-success" role="alert">
-                            <div className="icon hidden-xs">
-                                <i className="fa fa-check"></i>
-                                    <span className='ml-md-4 p-2'>SUCCESS! E-STAMP IS VERIFIED.</span>
-                              </div>
-                         </div>
-                        }
-                        { !status && 
-                           <div className="alert alert-danger" role="alert">
-                            <div className="icon hidden-xs">
-                                <i className="fa fa-ban"></i>
-                                    <span className='ml-md-4 p-2'>DANGER! E-STAMP IS TAMPERED.</span>
-                              </div>
-                         </div>
-                        }
-                        <textarea
-                          className="form-control w-100 mt-md-3"
-                          rows="4"
-                          value={`E-STAMP ID: ${text}\nSTATUS: ${status ? 'VERIFIED' : 'NOT VERIFIED'}`}
-                          onChange={(e) => setText(e.target.value)}
-                          readOnly={true}
-                        >
-                        </textarea>
-                      </>
-                    }
               </div>
-              <div className="col-lg-6 order-1 order-lg-2 hero-img">
-                <img src="assets/img/hero-img.svg" className="img-fluid animated" alt="" />
-              </div>
+              {loading && !text &&
+                <>
+                  <MDBProgress height='20'>
+                    <MDBProgressBar width={progress} value={progress} valuemin={0} valuemax={100}>
+                      <span style={{ backgroundColor: 'green' }} > {progress}% <b>Completed</b> </span>
+                    </MDBProgressBar>
+                  </MDBProgress>
+                </>
+              }
+              {text && !loading &&
+                <>
+                  <h4 className='text-center'>Below are the details!</h4>
+                  {status &&
+                    <div className="alert alert-success" role="alert">
+                      <div className="icon hidden-xs">
+                        <i className="fa fa-check"></i>
+                        <span className='ml-md-4 p-2'>SUCCESS! E-STAMP IS VERIFIED.</span>
+                      </div>
+                    </div>
+                  }
+                  {!status &&
+                    <div className="alert alert-danger" role="alert">
+                      <div className="icon hidden-xs">
+                        <i className="fa fa-ban"></i>
+                        <span className='ml-md-4 p-2'>DANGER! E-STAMP IS TAMPERED.</span>
+                      </div>
+                    </div>
+                  }
+                  <textarea
+                    className="form-control w-100 mt-md-3"
+                    rows="4"
+                    value={`E-STAMP ID: ${text}\nSTATUS: ${status ? 'VERIFIED' : 'NOT VERIFIED'}`}
+                    onChange={(e) => setText(e.target.value)}
+                    readOnly={true}
+                  >
+                  </textarea>
+                </>
+              }
+            </div>
+            <div className="col-lg-6 order-1 order-lg-2 hero-img">
+              <img src="assets/img/hero-img.svg" className="img-fluid animated" alt="" />
             </div>
           </div>
-        </section>
+        </div>
+      </section>
     </div>
   )
 }

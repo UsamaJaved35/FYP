@@ -5,8 +5,10 @@ const Navbar = () => {
         <>
             <header id="header" className="fixed-top d-flex align-items-center">
                 <div className="container d-flex align-items-center justify-content-between">
-                    <div className="logo">
-                        <h4 className="text-light"><span style={{color:'#162b4c'}}>E-Stamp Verification</span></h4>
+                    <div className="logo" style={{marginLeft:-90}} >
+                        <h4 className="text-light"><img src="assets/img/logo.png" alt=""
+                        style={{width:160,marginTop:16}} className="img-fluid" />
+                            <span style={{color:'#162b4c'}}>E-Stamp Verification</span></h4>
                     </div>
 
                     <nav id="navbar" style={{boxShadow:'0 0'}} className="navbar">
