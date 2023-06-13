@@ -13,6 +13,7 @@ const FileUpload = () => {
   const [success, setSuccess] = useState(true)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState('')
+
   useEffect(() => {
     socket.on('connect', () => {
       console.log('Connected to server');
@@ -42,12 +43,6 @@ const FileUpload = () => {
       formData.append('file', File);
       setProgress(0)
       IsLoading(true)
-      // if (File.name.split('.')[1].toLowerCase() === 'pdf') {
-      //   const numPages = await getNumPages(File);
-      //   console.log(numPages)
-      //   setNumPages(numPages);
-      // }
-      // if (numPages === 1) {
       let address = File.name.split('.')[1].toLowerCase() === 'pdf' ? `http://localhost:${port}/api/upload/pdf` : `http://localhost:${port}/api/upload`
       const response = await fetch(address,
         {
@@ -64,16 +59,13 @@ const FileUpload = () => {
         setSuccess(true)
         setText(data.Id)
         IsLoading(false)
+        console.log('agya')
       }
       else {
         setSuccess(false)
         setFile('')
         setMessage(data.message)
       }
-      // }
-      // else {
-      //   setMessage('Multiple pages in PDF are not allowed!')
-      // }
     }
   }
   return (
@@ -96,28 +88,23 @@ const FileUpload = () => {
                   {!success && !File && message &&
                     <div className="alert alert-danger" role="alert">
                       {message} <br />
-                      You may try using a clear picture of the stamp.
+                      You may try using a clear picture or pdf of the stamp.
                     </div>
                   }
-                  {/* {numPages>1 && message &&
-                    <div className="alert alert-danger" role="alert">
-                      {message} <br />
-                    </div>
-                  } */}
 
                   {!fileType &&
                     <div className="alert alert-danger" role="alert">
                       Unsupported format of file! Use:jpeg/jpg/png/pdf format
                     </div>
                   }
-                  {!loading && !text &&
+                  {!loading && !text && success && !progress &&
                     <input className="upload-btn scrollto"
                       type="file"
                       onChange={(e) =>
                         setFile(e.target.files[0])
                       }
                       id='file-input' />}
-                  {File && !loading && !text &&
+                  {File && !loading && !text && !progress &&
                     <input
                       type="button"
                       onClick={handleSubmit}
@@ -142,7 +129,7 @@ const FileUpload = () => {
                     <div className="alert alert-success" role="alert">
                       <div className="icon hidden-xs">
                         <i className="fa fa-check"></i>
-                        <span className='ml-md-4 p-2'>SUCCESS! E-STAMP IS VERIFIED.</span>
+                        <span className='ml-md-4 p-2'>SUCCESS!! E-STAMP IS VERIFIED.</span>
                       </div>
                     </div>
                   }
@@ -150,7 +137,7 @@ const FileUpload = () => {
                     <div className="alert alert-danger" role="alert">
                       <div className="icon hidden-xs">
                         <i className="fa fa-ban"></i>
-                        <span className='ml-md-4 p-2'>DANGER! E-STAMP IS TAMPERED.</span>
+                        <span className='ml-md-4 p-2'>DANGER!! E-STAMP IS TAMPERED.</span>
                       </div>
                     </div>
                   }

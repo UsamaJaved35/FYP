@@ -9,6 +9,7 @@ const io = require('socket.io')(server, { cors: { origin: '*' } });
 const hashGenerator = require('./hashGenerator')
 const saveHash = require('./saveHash')
 const getHash = require('./getHash');
+const checkId = require('./checkId');
 const compareHash = require('./compareHash');
 const pdfPoppler = require('pdf-poppler');
 const sharp = require('sharp');
@@ -58,7 +59,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     const originalHeight = 750;
     const zoomFactor = 3;
     const sharpenSigma = 100;
-    const cropHeight = originalHeight/2;
+    const cropHeight = originalHeight / 2;
     const imagePath = 'uploads/' + req.file.filename; // Path to the uploaded file
     emitProgress(15);
     const outputFilePath = 'outputs/' + req.file.filename.replace(/\.[^/.]+$/, '') + new Date().getTime() + '-zoomed.jpg';
@@ -95,29 +96,39 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
               let estampId = match ? match[1] : text.match(/E-Stamp ID: ([\S\s]{23})/)[1];
               estampId = estampId.replace(/\s/g, '');
               text = text.replace(/\s/g, '');
-              text=text.replace('PaidThroughChallan1','PaidThroughChallan')
+              text = text.replace('PaidThroughChallan1', 'PaidThroughChallan')
               emitProgress(85);
               let hashText = hashGenerator(text);
+              console.log(hashText)
               emitProgress(90);
               console.log(estampId);
               //  let status = saveHash(estampId, hashText);
-              let status = await compareHash(estampId, hashText);
-              emitProgress(100);
-              console.log(hashText);
-              //let status=true;
-              if (status) {
+              let id_exists = await checkId(estampId);
+              console.log(id_exists);
+              if (id_exists) {
+                let status = await compareHash(estampId, hashText);
+                emitProgress(100);
+                if (status) {
+                  return res.json({
+                    success: true,
+                    status: status,
+                    Id: estampId,
+                  })
+                }
                 return res.json({
                   success: true,
                   status: status,
                   Id: estampId,
+                  message: 'E-Stamp is tampered'
                 })
               }
-              return res.json({
-                success: true,
-                status: status,
-                Id: estampId,
-                message: 'E-Stamp is tampered'
-              })
+              else {
+                return res.json({
+                  success: false,
+                  status: false,
+                  message: 'E-Stamp ID does not exist'
+                })
+              }
             }
             else {
               return res.json({
@@ -183,7 +194,7 @@ app.post('/api/upload/pdf', upload.single('file'), async (req, res) => {
                   {
                     logger: (m) => {
                       if (m.progress) {
-                        emitProgress(50 + m.progress * 50);
+                        emitProgress(50 + m.progress * 40);
                       }
                     }
                   }
@@ -195,25 +206,37 @@ app.post('/api/upload/pdf', upload.single('file'), async (req, res) => {
                     console.log(estampId);
                     estampId = estampId.replace(/\s/g, '');
                     text = text.replace(/\s/g, '');
-                    text=text.replace('PaidThroughChallan1','PaidThroughChallan')
+                    text = text.replace('PaidThroughChallan1', 'PaidThroughChallan')
+                    emitProgress(90);
                     let hashText = hashGenerator(text);
-                   // let status = saveHash(estampId, hashText);
-                    let status = await compareHash(estampId, hashText);
-                  // let status=true;
-                   console.log(hashText); 
-                   if (status) {
+                   //  let status = saveHash(estampId, hashText);
+                    console.log(hashText)
+                    let id_exists = await checkId(estampId);
+                    console.log(id_exists);
+                    if (id_exists) {
+                      let status = await compareHash(estampId, hashText);
+                      emitProgress(100);
+                      if (status) {
+                        return res.json({
+                          success: true,
+                          status: status,
+                          Id: estampId,
+                        })
+                      }
                       return res.json({
                         success: true,
                         status: status,
                         Id: estampId,
+                        message: 'E-Stamp is tampered'
                       })
                     }
-                    return res.json({
-                      success: true,
-                      status: status,
-                      Id: estampId,
-                      message: 'E-Stamp is tampered'
-                    })
+                    else {
+                      return res.json({
+                        success: false,
+                        status: false,
+                        message: 'E-Stamp ID does not exist'
+                      })
+                    }
                   }
                   else {
                     return res.json({

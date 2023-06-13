@@ -6,7 +6,6 @@ contract HashStorage {
         string hash;
         bool exists;
     }
-
     mapping(string => HashEntry) private hashMap;
 
     function saveHash(string memory id, string memory hash) public {
@@ -20,5 +19,8 @@ contract HashStorage {
     }
    function compareHash(string memory id, string memory hash) public view returns (bool) {
     return (keccak256(bytes(hash)) == keccak256(bytes(hashMap[id].hash)));
+    }
+    function IdExists(string memory id) public view returns (bool) {
+        return hashMap[id].exists;
     }
 }
